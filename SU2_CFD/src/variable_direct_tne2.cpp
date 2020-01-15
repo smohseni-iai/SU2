@@ -404,14 +404,18 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
 //   rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);  //Cat nao interessa
 // }
 
-
-  //std::cout << "Mutation VARIABLE 5"  << std::endl<< std::endl<< std::endl<< std::endl;
+//  std::cout << "Initialization "  << std::endl<< std::endl<< std::endl<< std::endl;
+ // std::cout << "T = "  << T << std::endl<< std::endl<< std::endl<< std::endl;
+ // std::cout << "Tve = "  << Tve << std::endl<< std::endl<< std::endl<< std::endl;
 
   
   Energies = reactive_TNE2variable->Get_MixtureEnergies(val_massfrac, rho, T, Tve); //Cat1
 
   rhoE   = rho*(Energies[0] + 0.5*sqvel);//Cat1
   rhoEve = rho*Energies[1];//Cat1
+
+//  std::cout << "rhoE = "  << rhoE << std::endl<< std::endl<< std::endl<< std::endl;
+//  std::cout << "rhoEve = "  << rhoEve << std::endl<< std::endl<< std::endl<< std::endl;
 
   //std::cout << "Mutation VARIABLE 8"  << std::endl<< std::endl<< std::endl<< std::endl;
 
@@ -1188,10 +1192,6 @@ su2double CTNE2EulerVariable::CalcEve(CConfig *config, su2double *PrimitiveVar, 
 
 
  
-
-
-
-
   
 su2double *cs;
 unsigned short iSpecies;
@@ -1201,7 +1201,6 @@ unsigned short iSpecies;
  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) cs[iSpecies] = PrimitiveVar[RHOS_INDEX+iSpecies]/PrimitiveVar[RHO_INDEX];
 
  SpeciesEnergies = reactive_TNE2variable->Get_SpeciesEnergies(cs, PrimitiveVar[RHO_INDEX], PrimitiveVar[T_INDEX], PrimitiveVar[TVE_INDEX]);
- 
  delete [] cs;
  
  return SpeciesEnergies[nSpecies+val_Species];
@@ -1345,7 +1344,9 @@ su2double CTNE2EulerVariable::CalcCvve(su2double val_Tve, CConfig *config, unsig
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) cs[iSpecies] = 0.0;
 
+
   Cvves = reactive_TNE2variable->Get_CvVibElSpecies(cs, 0.0, 0.0, Tve); //Only Tve is used
+
 
   delete [] cs;
 
@@ -1637,9 +1638,29 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   rhoEmix = rhoE - 0.5*rho*sqvel;
 
 
-  Temperatures = reactive_TNE2variable->Get_Temperatures(cs, rho, rhoEmix, rhoEve);
+ // std::cout << "BEFOREEEEEEEEEEEEE " <<std::endl<< std::endl<< std::endl<< std::endl;
+ // std::cout << "T = "  << V[T_INDEX] <<std::endl<< std::endl<< std::endl<< std::endl;
+ // std::cout << "Tve ="  << V[TVE_INDEX] << std::endl<< std::endl<< std::endl<< std::endl;
 
+
+ 
+  Temperatures = reactive_TNE2variable->Get_Temperatures(cs, rho, V[T_INDEX], V[TVE_INDEX], rhoEmix, rhoEve);
+
+ 
   V[T_INDEX] = Temperatures[0];
+
+
+  //std::cout << "Cons2Prim " <<std::endl<< std::endl<< std::endl<< std::endl;
+
+  //std::cout << "rho N2 = "  << V[3] <<std::endl<< std::endl<< std::endl<< std::endl;
+  //std::cout << "rho O2 ="  << V[4] << std::endl<< std::endl<< std::endl<< std::endl;
+
+  //std::cout << "rhoEmix = "  << rhoEmix <<std::endl<< std::endl<< std::endl<< std::endl;
+  //std::cout << "rhoEve ="  << rhoEve << std::endl<< std::endl<< std::endl<< std::endl;
+
+
+  //std::cout << "T = "  << Temperatures[0] <<std::endl<< std::endl<< std::endl<< std::endl;
+  //std::cout << "Tve ="  << Temperatures[1] << std::endl<< std::endl<< std::endl<< std::endl;
 
   //Cvve = reactive_TNE2variable->Get_CvVibElSpecies(cs, rho, V[T_INDEX], V[T_INDEX]);
 
@@ -1815,7 +1836,11 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     //}
   }
 
+  //std::cout << "After " <<std::endl<< std::endl<< std::endl<< std::endl;
+  //std::cout << "T = "  << V[T_INDEX] <<std::endl<< std::endl<< std::endl<< std::endl;
+  //std::cout << "Tve ="  << V[TVE_INDEX] << std::endl<< std::endl<< std::endl<< std::endl;
 
+ 
   //V[TVE_INDEX] = V[T_INDEX]; 
 
   //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
@@ -1832,6 +1857,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
             val_Cvves[iSpecies] = CalcCvve(V[TVE_INDEX], config, iSpecies);          
           }
 
+ 
   /*--- Set mixture rhoCvve ---*/
   rhoCvve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1840,6 +1866,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   }
   V[RHOCVVE_INDEX] = rhoCvve;
 
+ 
 
   /*--- If there are clipped temperatures, correct the energy terms ---*/
   //  if (errT) {
@@ -1876,6 +1903,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   CalcdTdU(  V, config, val_dTdU  );
   CalcdTvedU(V, val_eves, config, val_dTvedU);
 
+ 
 
   /*--- Sound speed ---*/
   radical2 = 0.0;
@@ -1930,7 +1958,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];
 
   delete [] cs;
-
+ 
   return nonPhys;
 }
 

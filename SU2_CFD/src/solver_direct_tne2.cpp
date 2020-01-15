@@ -195,6 +195,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
 
 
+
 //  std::cout << "Mutation: reactive"  << std::endl;
   
   
@@ -540,7 +541,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
     Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach_Inf;
   }
 
-  
   //std::cout << "Mutation SOLVER 1"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   /*--- Create a CVariable that stores the free-stream values ---*/ 
@@ -549,6 +549,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
                                       Temperature_ve_Inf, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config, reactive);
 
+  
   //exit(0); //Mutation
 
   
@@ -561,7 +562,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   
   //std::cout << "Mutation VARIABLE 10"  << std::endl<< std::endl<< std::endl<< std::endl;
   
-
   /*--- Initialize the solution to the far-field state everywhere. ---*/ 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint] = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, 
@@ -582,8 +582,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   counter_local = 0;
 
  
-
-
+ 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     nonPhys = node[iPoint]->SetPrimVar_Compressible(config);
 
@@ -712,6 +711,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
       rhoE   = rho*(Energies[0] + 0.5*sqvel);
       rhoEve = rho*Energies[1];
+
        
       
       //std::cout << "rhoEve=" << rhoEve << std::endl;
@@ -779,6 +779,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
   /*--- Deallocate arrays ---*/
   delete [] Mvec_Inf;
+  //std::cout << "3" << std::endl << std::endl; 
 }
 
 CTNE2EulerSolver::~CTNE2EulerSolver(void) {
@@ -4416,7 +4417,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   
   Gamma     = reactive->Get_Gamma(MassFrac_Inf, Density_FreeStream, T, Tve);
   
-  std::cout << setprecision(6)<< "Mutation: Gamma=" << Gamma << std::endl << std::endl;
+  //std::cout << setprecision(6)<< "Mutation: Gamma=" << Gamma << std::endl << std::endl;
 
 
 
@@ -4547,7 +4548,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
     else {
 
-      std::cout <<std::endl<<std::endl<< "Mutation  PASSO AQUI 1" <<std::endl <<std::endl<<std::endl;
+     // std::cout <<std::endl<<std::endl<< "Mutation  PASSO AQUI 1" <<std::endl <<std::endl<<std::endl;
 
       //Cat gamma calcular aqui com base no freestream
 
@@ -4594,13 +4595,13 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     Temperature_Ref   = Temperature_FreeStream;  // Temperature_FreeStream = 1.0
   }
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
-    std::cout <<std::endl<<std::endl<< "Mutation  PASSO AQUI 2" <<std::endl <<std::endl<<std::endl;
+  //  std::cout <<std::endl<<std::endl<< "Mutation  PASSO AQUI 2" <<std::endl <<std::endl<<std::endl;
     Pressure_Ref      = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma //Cat gamma
     Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
     Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
   }
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
-    std::cout <<std::endl<<std::endl<< "Mutation  PASSO AQUI 3" <<std::endl <<std::endl<<std::endl;
+  //  std::cout <<std::endl<<std::endl<< "Mutation  PASSO AQUI 3" <<std::endl <<std::endl<<std::endl;
     Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2) //Cat gamma
     Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
     Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
@@ -5431,7 +5432,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  cout << "This dont work" << endl;
+  cout << "This dont work 1" << endl;
   cout << "Using gamma = 1.4" << endl;
 
   unsigned short iVar, iDim, iSpecies, RHO_INDEX, nSpecies;
@@ -5442,7 +5443,7 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 
 
   
-
+cout << "This dont work 2" << endl;
 
   bool implicit             = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
@@ -5459,10 +5460,10 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   su2double *V_domain = new su2double[nPrimVar];  su2double *V_inlet = new su2double[nPrimVar];
   su2double *Normal   = new su2double[nDim];
   su2double UnitNormal[3];
-
+cout << "This dont work 3" << endl;
   nSpecies = config->GetnSpecies();
   su2double Spec_Density[nSpecies]; //QT THROWING AN ERROR WHEN USING nSPECIES
-
+cout << "This dont work 4" << endl;
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -5503,6 +5504,8 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       /*--- Total properties have been specified at the inlet. ---*/
       case TOTAL_CONDITIONS:
 
+      cout << "This dont work 5" << endl;
+
         /*--- Retrieve the specified total conditions for this inlet. ---*/
         P_Total  = config->GetInlet_Ptotal(Marker_Tag);
         T_Total  = config->GetInlet_Ttotal(Marker_Tag);
@@ -5511,6 +5514,8 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         /*--- Non-dim. the inputs if necessary. ---*/
         P_Total /= config->GetPressure_Ref();
         T_Total /= config->GetTemperature_Ref();
+
+        cout << "This dont work 6" << endl;
 
         /*--- Store primitives and set some variables for clarity. ---*/
         Density = V_domain[RHO_INDEX];
@@ -5566,7 +5571,7 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         /*--- Compute new velocity vector at the inlet ---*/
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
-
+cout << "This dont work 7" << endl;
         /*--- Static temperature from the speed of sound relation ---*/
         Temperature = SoundSpeed2/(Gamma*Gas_Constant);
         //NEED TVE AS WELL
@@ -5581,13 +5586,16 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         /*--- Using pressure, density, & velocity, compute the energy ---*/
         Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
         //NEED EVE AS WELL
-
+cout << "This dont work 8" << endl;
         /*--- Conservative variables, using the derived quantities ---*/
         for (iSpecies=0; iSpecies<nSpecies; iDim++)
           U_inlet[iSpecies] = Spec_Density[iSpecies];
+        cout << "This dont work 9" << endl;
         for (iDim = 0; iDim < nDim; iDim++)
           U_inlet[nSpecies+iDim] = Velocity[iDim]*Density;
+        cout << "This dont work 10" << endl;
         U_inlet[nVar-2] = Energy*Density;
+        cout << "This dont work 11" << endl;
         //U_inlet[nVar-1]=Eve
 
         /*--- Primitive variables, using the derived quantities ---*/
@@ -5660,8 +5668,12 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         break;
       }
 
+      cout << "This dont work 8" << endl;
+
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetConservative(U_domain, U_inlet);
+
+      cout << "This dont work 9" << endl;
 
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());

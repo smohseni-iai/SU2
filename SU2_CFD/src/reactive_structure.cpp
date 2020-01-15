@@ -101,6 +101,7 @@ vector<su2double> CReactiveMutation::Get_CvTraRotSpecies(su2double* cs, su2doubl
 
  vector<su2double> CReactiveMutation::Get_CvVibElSpecies(su2double* cs, su2double rho, su2double T, su2double Tve) {
 
+
   Cv_ks = mutation->Mutation_Get_CvModeSpecies(cs, rho, T, Tve);
 
   Cv_ves.resize(nSpecies);
@@ -301,9 +302,9 @@ vector<su2double> CReactiveMutation::Get_ThermalConductivity(su2double *cs, su2d
    return lambda;
 }
 
-vector<su2double> CReactiveMutation::Get_Temperatures(su2double *cs, su2double rho, su2double rhoE, su2double rhoEve){
+vector<su2double> CReactiveMutation::Get_Temperatures(su2double *cs, su2double rho, su2double T, su2double Tve, su2double rhoE, su2double rhoEve){
 
-  Temp = mutation->Mutation_Get_Temperatures(cs, rho, rhoE, rhoEve);
+  Temp = mutation->Mutation_Get_Temperatures(cs, rho, T, Tve, rhoE, rhoEve);
 
   return Temp;
 }
@@ -377,7 +378,7 @@ su2double  CReactiveHardCode::Get_Viscosity(su2double *cs, su2double rho, su2dou
 
 vector<su2double> CReactiveHardCode::Get_ThermalConductivity(su2double *cs, su2double rho, su2double T, su2double Tve) {}
 
-vector<su2double> CReactiveHardCode::Get_Temperatures(su2double *cs, su2double rho, su2double rhoE, su2double rhoEve){}
+vector<su2double> CReactiveHardCode::Get_Temperatures(su2double *cs, su2double rho, su2double T, su2double Tve, su2double rhoE, su2double rhoEve){}
 
 su2double  CReactiveHardCode::Get_SoundSpeedFrozen(su2double *cs, su2double rho, su2double T, su2double Tve){}
 

@@ -140,7 +140,7 @@ public:
 
     virtual vector<su2double> Get_ThermalConductivity(su2double *cs, su2double rho, su2double T, su2double Tve);
 
-    virtual vector<su2double> Get_Temperatures(su2double *cs, su2double rho, su2double rhoE, su2double rhoEve);
+    virtual vector<su2double> Get_Temperatures(su2double *cs, su2double rho, su2double T, su2double Tve, su2double rhoE, su2double rhoEve);
 
     virtual su2double  Get_SoundSpeedFrozen(su2double *cs, su2double rho, su2double T, su2double Tve);
 
@@ -209,7 +209,7 @@ public:
 
   vector<su2double> Get_ThermalConductivity(su2double *cs, su2double rho, su2double T, su2double Tve);
 
-  vector<su2double> Get_Temperatures(su2double *cs, su2double rho, su2double rhoE, su2double rhoEve);
+  vector<su2double> Get_Temperatures(su2double *cs, su2double rho, su2double T, su2double Tve, su2double rhoE, su2double rhoEve);
 
   su2double  Get_SoundSpeedFrozen(su2double *cs, su2double rho, su2double T, su2double Tve);
 
@@ -278,7 +278,7 @@ public:
 
   vector<su2double> Get_ThermalConductivity(su2double *cs, su2double rho, su2double T, su2double Tve);
 
-  vector<su2double> Get_Temperatures(su2double *cs, su2double rho, su2double rhoE, su2double rhoEve);
+  vector<su2double> Get_Temperatures(su2double *cs, su2double rho, su2double T, su2double Tve,  su2double rhoE, su2double rhoEve);
 
   su2double  Get_SoundSpeedFrozen(su2double *cs, su2double rho, su2double T, su2double Tve);
 

@@ -338,7 +338,7 @@ vector<su2double> CMutation::Mutation_Get_ThermalConductivity(su2double *cs, su2
    return lambda;
 }
 
-vector<su2double> CMutation::Mutation_Get_Temperatures(su2double *cs, su2double rho, su2double rhoE, su2double rhoEve){
+vector<su2double> CMutation::Mutation_Get_Temperatures(su2double *cs, su2double rho, su2double T, su2double Tve, su2double rhoE, su2double rhoEve){
 
    rhos  = Mutation_SpeciesDensity(cs, rho);
 
@@ -346,6 +346,9 @@ vector<su2double> CMutation::Mutation_Get_Temperatures(su2double *cs, su2double 
 
    en[0] = rhoE;
    en[1] = rhoEve; 
+
+
+   //Mutation_UpdateMixtureState(cs, rho, T, Tve);
 
    mix.setState(rhos.data(), en.data(), 0);
 

@@ -458,6 +458,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   unsigned short nDim = geometry->GetnDim();
   
 #ifndef HAVE_MPI
+
+ // std::cout <<std::endl<< "Mutation 0"  << std::endl<< std::endl;
   
   unsigned short iDim;
   char buffer [50];
@@ -494,6 +496,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
       if (nDim == 3) SurfFlow_file <<  "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Skin_Friction_Coefficient_Z\", \"Heat_Flux\", \"Temperature\", \"Temperature_ve\"" << "\n";
       break;
   }
+
+ // std::cout <<std::endl<< "Mutation 1"  << std::endl<< std::endl;
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Plotting(iMarker) == YES) {
@@ -554,6 +558,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
       }
     }
   }
+
+  //std::cout <<std::endl<< "Mutation 2"  << std::endl<< std::endl;
   
   SurfFlow_file.close();
   
@@ -585,7 +591,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  
+  //std::cout <<std::endl<< "Mutation 3"  << std::endl<< std::endl;
   /*--- Send and Recv buffers ---*/
   
   su2double *Buffer_Send_Coord_x = new su2double [MaxLocalVertex_Surface];
@@ -692,6 +698,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           nVertex_Surface++;
         }
       }
+
+      //std::cout <<std::endl<< "Mutation 4.0"  << std::endl<< std::endl;
   
   /*--- Send the information to the master node ---*/
   
@@ -709,8 +717,12 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     SU2_MPI::Gather(Buffer_Send_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   }
   if (solver == TNE2_NAVIER_STOKES){
+   // std::cout <<std::endl<< "Mutation 4.0.1"  << std::endl<< std::endl;
+
     SU2_MPI::Gather(Buffer_Send_SkinFriction_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+   // std::cout <<std::endl<< "Mutation 4.0.2"  << std::endl<< std::endl;
     SU2_MPI::Gather(Buffer_Send_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    //std::cout <<std::endl<< "Mutation 4.0.3"  << std::endl<< std::endl;
     if (nDim == 3) SU2_MPI::Gather(Buffer_Send_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(Buffer_Send_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(Buffer_Send_T, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_T, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -719,6 +731,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   }
   SU2_MPI::Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   
+  //std::cout <<std::endl<< "Mutation 4.1"  << std::endl<< std::endl;
+
   /*--- The master node unpacks the data and writes the surface CSV file ---*/
   
   if (rank == MASTER_NODE) {
@@ -732,6 +746,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     strcpy (cstr, filename.c_str());
     if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
       SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
+
+
       
     } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
       if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
@@ -740,16 +756,22 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
       if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    SU2_TYPE::Int(iExtIter));
       if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
     }
-    else
+    else{
+      //std::cout <<std::endl<< "Mutation 4.2"  << std::endl<< std::endl;
       SPRINTF (buffer, ".csv");
+    }
     
     strcat (cstr, buffer);
     SurfFlow_file.precision(15);
     SurfFlow_file.open(cstr, ios::out);
+
+    //std::cout <<std::endl<< "Mutation 4.3"  << std::endl<< std::endl;
     
     SurfFlow_file << "\"Global_Index\", \"x_coord\", \"y_coord\", ";
     if (nDim == 3) SurfFlow_file << "\"z_coord\", ";
     SurfFlow_file << "\"Pressure\", \"Pressure_Coefficient\", ";
+
+    //std::cout <<std::endl<< "Mutation 4.4"  << std::endl<< std::endl;
     
     switch (solver) {
       case EULER : case FEM_EULER: SurfFlow_file <<  "\"Mach_Number\"" << "\n"; break;
@@ -763,6 +785,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
         if (nDim == 3) SurfFlow_file << "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Skin_Friction_Coefficient_Z\", \"Heat_Flux\", \"Temperature\", \"Temperature_ve\"" << "\n";
         break;
     }
+
+    //std::cout <<std::endl<< "Mutation 5"  << std::endl<< std::endl;
     
     /*--- Loop through all of the collected data and write each node's values ---*/
     
@@ -819,6 +843,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
         }
       }
     }
+
+    //std::cout <<std::endl<< "Mutation 6"  << std::endl<< std::endl;
     
     /*--- Close the CSV file ---*/
     SurfFlow_file.close();
@@ -9465,6 +9491,8 @@ void COutput::SetResult_Files(CSolver *****solver_container, CGeometry ****geome
 #endif
     
     if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
+
+    //std::cout << "MutationCOutput::SetResult_Files 0"  << std::endl<< std::endl<< std::endl<< std::endl;
     
     switch (config[iZone]->GetKind_Solver()) {
         
@@ -13533,6 +13561,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
     /*--- Write out CSV files in parallel for flow and adjoint. ---*/
     
     if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
+
+    //std::cout << "MutationCOutput::SetResult_Files 0"  << std::endl<< std::endl<< std::endl<< std::endl;
     
     switch (config[iZone]->GetKind_Solver()) {
       case EULER : case NAVIER_STOKES : case RANS :
@@ -13540,7 +13570,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
         break;
       case TNE2_EULER : case TNE2_NAVIER_STOKES :
-      //std::cout <<std::endl<< "Mutation SetResult_Files_Parallel 2"  << std::endl<< std::endl;
+     // std::cout <<std::endl<< "Mutation SetResult_Files_Parallel 2"  << std::endl<< std::endl;
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
           solver_container[iZone][iInst][MESH_0][TNE2_SOL], iExtIter, iZone, iInst);
           //std::cout << std::endl<<"Mutation SetResult_Files_Parallel 3"  << std::endl<< std::endl;}
