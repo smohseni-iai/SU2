@@ -2,7 +2,7 @@
  * \file CTurbSASolver.cpp
  * \brief Main subrotuines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.4 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -96,7 +96,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -105,6 +105,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+    if (ReducerStrategy)
+      EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
 
     if (config->GetExtraOutput()) {
       if (nDim == 2) { nOutputVariables = 13; }
@@ -222,9 +225,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   SetImplicitPeriodic(true);
 
-  /* Store the initial CFL number for all grid points. */
+  /*--- Store the initial CFL number for all grid points. ---*/
 
-  const su2double CFL = config->GetCFL(MGLevel);
+  const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb();
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     nodes->SetLocalCFL(iPoint, CFL);
   }
@@ -277,9 +280,12 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   const su2double* Vorticity = nullptr;
   su2double Laminar_Viscosity = 0.0;
 
-  /*--- Clear residual and system matrix. ---*/
-  LinSysRes.SetValZero();
-  Jacobian.SetValZero();
+  /*--- Clear residual and system matrix, not needed for
+   * reducer strategy as we write over the entire matrix. ---*/
+  if (!ReducerStrategy) {
+    LinSysRes.SetValZero();
+    Jacobian.SetValZero();
+  }
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
@@ -1509,129 +1515,6 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
   //
   //  delete[] Vector;
   //
-}
-
-void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container,
-                                       CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config){
-
-  unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
-  unsigned short iDim, iVar, jVar, iMarker;
-
-  unsigned short nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
-  su2double Normal[MAXNDIM] = {0.0};
-  su2double *PrimVar_i = new su2double[nPrimVar];
-  su2double *PrimVar_j = new su2double[nPrimVar];
-
-  unsigned long nDonorVertex;
-  su2double weight;
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
-
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-
-        if (geometry->node[iPoint]->GetDomain()) {
-
-          nDonorVertex = GetnSlidingStates(iMarker, iVertex);
-
-          /*--- Initialize Residual, this will serve to accumulate the average ---*/
-
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Residual[iVar] = 0.0;
-            for (jVar = 0; jVar < nVar; jVar++)
-              Jacobian_i[iVar][jVar] = 0.0;
-          }
-
-          /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
-
-          for (jVertex = 0; jVertex < nDonorVertex; jVertex++) {
-
-            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-
-            for (iVar = 0; iVar < nPrimVar; iVar++) {
-              PrimVar_i[iVar] = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,iVar);
-              PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar, jVertex);
-            }
-
-            /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
-
-            weight = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
-
-            /*--- Set primitive variables ---*/
-
-            conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
-
-            /*--- Set the turbulent variable states ---*/
-            Solution_i[0] = nodes->GetSolution(iPoint,0);
-            Solution_j[0] = GetSlidingState(iMarker, iVertex, 0, jVertex);
-
-            conv_numerics->SetTurbVar(Solution_i, Solution_j);
-            /*--- Set the normal vector ---*/
-
-            conv_numerics->SetNormal(Normal);
-
-            if (dynamic_grid)
-              conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-
-            /*--- Compute the convective residual using an upwind scheme ---*/
-
-            auto residual = conv_numerics->ComputeResidual(config);
-
-            /*--- Accumulate the residuals to compute the average ---*/
-
-            for (iVar = 0; iVar < nVar; iVar++) {
-              Residual[iVar] += weight*residual.residual[iVar];
-              for (jVar = 0; jVar < nVar; jVar++)
-                Jacobian_i[iVar][jVar] += weight*residual.jacobian_i[iVar][jVar];
-            }
-          }
-
-          /*--- Add Residuals and Jacobians ---*/
-
-          LinSysRes.AddBlock(iPoint, Residual);
-
-          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-
-          /*--- Set the normal vector and the coordinates ---*/
-
-          visc_numerics->SetNormal(Normal);
-          visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-
-          /*--- Primitive variables, and gradient ---*/
-
-          visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-          //          visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-
-          /*--- Turbulent variables and its gradients  ---*/
-
-          visc_numerics->SetTurbVar(Solution_i, Solution_j);
-          visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
-
-          /*--- Compute and update residual ---*/
-
-          auto residual = visc_numerics->ComputeResidual(config);
-
-          LinSysRes.SubtractBlock(iPoint, residual);
-
-          /*--- Jacobian contribution for implicit integration ---*/
-
-          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-
-        }
-      }
-    }
-  }
-
-  /*--- Free locally allocated memory ---*/
-
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
-
 }
 
 void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
