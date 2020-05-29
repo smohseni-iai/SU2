@@ -5595,19 +5595,14 @@ void CSolver::ComputeMetric(CSolver   **solver,
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     vector<vector<su2double> > HessianWeights(3, vector<su2double>(nVarTot, 0.0));
 
-    //--- Convective terms
-    ConvectiveMetric(solver, geometry, config, iPoint, HessianWeights);
-    
-    /*
-    //--- Scalar dissipation terms
-    if (cjst) DissipativeMetric(solver, geometry, config, iPoint, HessianWeights);
-     */
-
-    //--- Viscous terms
-    if (visc) ViscousMetric(solver, geometry, config, iPoint, HessianWeights);
-
-    //--- Turbulent terms
-    if (turb) solver[TURB_SOL]->TurbulentMetric(solver, geometry, config, iPoint, HessianWeights);
+//    //--- Convective terms
+//    ConvectiveMetric(solver, geometry, config, iPoint, HessianWeights);
+//
+//    //--- Viscous terms
+//    if (visc) ViscousMetric(solver, geometry, config, iPoint, HessianWeights);
+//
+//    //--- Turbulent terms
+//    if (turb) solver[TURB_SOL]->TurbulentMetric(solver, geometry, config, iPoint, HessianWeights);
     
     //--- Make Hessians positive definite
     SetPositiveDefiniteHessian(geometry, config, iPoint);
@@ -6133,6 +6128,9 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
                                   vector<vector<su2double> > &weights) {
   CVariable *varFlo = solver[FLOW_SOL]->GetNodes(),
             *varTur = solver[TURB_SOL]->GetNodes();
+  
+  CVariable *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
+            *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
   unsigned short iVar, im;
   const unsigned short nMetr = 3*(nDim-1);
@@ -6145,12 +6143,14 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
 
     for (im = 0; im < nMetr; ++im) {
       const su2double hess = varFlo->GetHessian(iPoint, iVar, im);
-      const su2double part = (abs(weights[0][iVar])
-                             +abs(weights[1][iVar])
-                             +abs(weights[2][iVar]))*hess;
-//      const su2double part = abs(weights[0][iVar]
-//                                +weights[1][iVar]
-//                                +weights[2][iVar])*hess;
+      const su2double adj  = varAdjFlo->GetSolution(iPoint,iVar);
+      const su2double part = abs(adj)*hess;
+//      const su2double part = (abs(weights[0][iVar])
+//                             +abs(weights[1][iVar])
+//                             +abs(weights[2][iVar]))*hess;
+////      const su2double part = abs(weights[0][iVar]
+////                                +weights[1][iVar]
+////                                +weights[2][iVar])*hess;
       varFlo->AddMetric(iPoint, im, part);
     }
   }
@@ -6162,12 +6162,14 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
 
       for (im = 0; im < nMetr; ++im) {
         const su2double hess = varTur->GetHessian(iPoint, iVar, im);
-        const su2double part = (abs(weights[0][nVarFlo+iVar])
-                               +abs(weights[1][nVarFlo+iVar])
-                               +abs(weights[2][nVarFlo+iVar]))*hess;
-//        const su2double part = abs(weights[0][nVarFlo+iVar]
-//                                  +weights[1][nVarFlo+iVar]
-//                                  +weights[2][nVarFlo+iVar])*hess;
+        const su2double adj  = varAdjTur->GetSolution(iPoint,iVar);
+        const su2double part = abs(adj)*hess;
+//        const su2double part = (abs(weights[0][nVarFlo+iVar])
+//                               +abs(weights[1][nVarFlo+iVar])
+//                               +abs(weights[2][nVarFlo+iVar]))*hess;
+////        const su2double part = abs(weights[0][nVarFlo+iVar]
+////                                  +weights[1][nVarFlo+iVar]
+////                                  +weights[2][nVarFlo+iVar])*hess;
         varFlo->AddMetric(iPoint, im, part);
       }
     }
