@@ -64,10 +64,11 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
     StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   }
 
+  /*--- Reading pitching csv file if exists and store it. ---*/
   string filename = config->GetPitching_Filename();
   vector<vector<string>> vals_string;
   if (!filename.empty()){
-    cout << "about to read file" << endl;
+    cout << "about to read pitching csv file" << endl;
     using_pitching_file = true;
     ReadCSVFile(filename, pitching_labels, vals_string);
     pitching_vals.resize(vals_string.size(),{});
@@ -81,6 +82,26 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
   else{
     using_pitching_file = false;
   }
+
+  /*--- Reading translation csv file if exists and store it. ---*/
+  string filenameTranslation = config->GetTranslation_Filename();
+  vector<vector<string>> translation_vals_string;
+  if (!filenameTranslation.empty()){
+    cout << "about to read translation csv file" << endl;
+    using_translation_file = true;
+    ReadCSVFile(filenameTranslation, translation_labels, translation_vals_string);
+    translation_vals.resize(translation_vals_string.size(),{});
+    for (unsigned long i = 0; i < translation_vals_string.size(); i++){
+      translation_vals[i].resize(translation_vals_string[i].size(),0.0);
+      for (unsigned short j; j < translation_vals_string.size(); j++){
+        translation_vals[i][j] = stod(translation_vals_string[i][j]);
+      }
+    }
+  }
+  else{
+    using_translation_file = false;
+  }
+
 }
 
 CVolumetricMovement::~CVolumetricMovement(void) { }
@@ -2261,6 +2282,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  unsigned long restart_iter = config->GetRestart_Iter();
 
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2300,10 +2322,23 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
     }
   }
 
+  /*--- Check if  translation file exists to fill up delta change in the position in the x, y, & z directions. ---*/
+  if (using_translation_file){
+    deltaX[0] = translation_vals[iter-restart_iter][0];
+    deltaX[1] = translation_vals[iter-restart_iter][1];
+    deltaX[2] = translation_vals[iter-restart_iter][2];
+
+    /*--- Velocity at the new time ---*/
+    xDot[0] = translation_vals[iter-restart_iter][3];
+    xDot[1] = translation_vals[iter-restart_iter][4];
+    xDot[2] = translation_vals[iter-restart_iter][5];
+  }
+  else{
   /*--- Compute delta change in the position in the x, y, & z directions. ---*/
   deltaX[0] = xDot[0]*(time_new-time_old);
   deltaX[1] = xDot[1]*(time_new-time_old);
   deltaX[2] = xDot[2]*(time_new-time_old);
+  }
 
   if (rank == MASTER_NODE) {
     cout << " New physical time: " << time_new << " seconds." << endl;

@@ -2071,6 +2071,8 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("PITCHING_PHASE", 3, Pitching_Phase, default_vel_inf);
   /* DESCRIPTION: Name of file defining arbitrary pitching set (degrees) about x, y, & z axes (RIGID_MOTION only) */
   addStringOption("PITCHING_FILENAME", Pitching_Filename, string(""));
+  /* DESCRIPTION: Name of file defining arbitrary translation set in x, y, & z axes (RIGID_MOTION only) */
+  addStringOption("TRANSLATION_FILENAME", Translation_Filename, string(""));
   /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
   addDoubleArrayOption("PLUNGING_OMEGA", 3, Plunging_Omega, default_vel_inf);
   /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
