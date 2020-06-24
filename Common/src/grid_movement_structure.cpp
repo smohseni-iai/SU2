@@ -74,7 +74,7 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
     pitching_vals.resize(vals_string.size(),{});
     for (unsigned long i = 0; i < vals_string.size(); i++){
       pitching_vals[i].resize(vals_string[i].size(),0.0);
-      for (unsigned short j; j < vals_string.size(); j++){
+      for (unsigned short j = 0; j < vals_string[i].size(); j++){
         pitching_vals[i][j] = stod(vals_string[i][j]);
       }
     }
@@ -93,7 +93,7 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
     translation_vals.resize(translation_vals_string.size(),{});
     for (unsigned long i = 0; i < translation_vals_string.size(); i++){
       translation_vals[i].resize(translation_vals_string[i].size(),0.0);
-      for (unsigned short j; j < translation_vals_string.size(); j++){
+      for (unsigned short j = 0; j < translation_vals_string[i].size(); j++){
         translation_vals[i][j] = stod(translation_vals_string[i][j]);
       }
     }
