@@ -68,7 +68,6 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
   string filename = config->GetPitching_Filename();
   vector<vector<string>> vals_string;
   if (!filename.empty()){
-    cout << "about to read pitching csv file" << endl;
     using_pitching_file = true;
     ReadCSVFile(filename, pitching_labels, vals_string);
     pitching_vals.resize(vals_string.size(),{});
@@ -87,7 +86,6 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
   string filenameTranslation = config->GetTranslation_Filename();
   vector<vector<string>> translation_vals_string;
   if (!filenameTranslation.empty()){
-    cout << "about to read translation csv file" << endl;
     using_translation_file = true;
     ReadCSVFile(filenameTranslation, translation_labels, translation_vals_string);
     translation_vals.resize(translation_vals_string.size(),{});
@@ -1820,7 +1818,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   unsigned long iPoint;
   su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord;
   su2double Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, Lref;
-  su2double dt, Center_Moment[3] = {0.0,0.0,0.0};
+  su2double dt, Omega_Ref, Center_Moment[3] = {0.0,0.0,0.0};
   su2double *GridVel, newGridVel[3] = {0.0,0.0,0.0};
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
@@ -1832,6 +1830,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   nDim = geometry->GetnDim();
   dt   = config->GetDelta_UnstTimeND();
   Lref = config->GetLength_Ref();
+  Omega_Ref = config->GetOmega_Ref();
 
   /*--- For the unsteady adjoint, use reverse time ---*/
   if (adjoint) {
@@ -1848,7 +1847,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 
   for (iDim = 0; iDim < 3; iDim++){
     Center[iDim] = config->GetMotion_Origin(iDim);
-    Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+    Omega[iDim]  = config->GetRotation_Rate(iDim)/Omega_Ref;
   }
 
   /*-- Set dt for harmonic balance cases ---*/
@@ -1866,8 +1865,8 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   dpsi   = Omega[2]*dt;
 
   if (rank == MASTER_NODE && iter == 0) {
-    cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
-    cout << ", " << Omega[2] << ") rad/s." << endl;
+    cout << " Angular velocity: (" << Omega[0] * Omega_Ref << ", " << Omega[1] * Omega_Ref;
+    cout << ", " << Omega[2] * Omega_Ref<< ") rad/s." << endl;
   }
 
   /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
@@ -1978,7 +1977,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   /*--- Local variables ---*/
   su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord, Center[3] = {0.0,0.0,0.0},
   Omega[3] = {0.0,0.0,0.0}, Ampl[3] = {0.0,0.0,0.0}, Phase[3] = {0.0,0.0,0.0};
-  su2double Lref, deltaT, alphaDot[3], *GridVel, newGridVel[3] = {0.0,0.0,0.0};
+  su2double Lref, deltaT, Omega_Ref, alphaDot[3], *GridVel, newGridVel[3] = {0.0,0.0,0.0};
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
@@ -1994,12 +1993,12 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
-
+  Omega_Ref = config->GetOmega_Ref();
   /*--- Pitching origin, frequency, and amplitude from config. ---*/
 
   for (iDim = 0; iDim < 3; iDim++){
     Center[iDim] = config->GetMotion_Origin(iDim);
-    Omega[iDim]  = config->GetPitching_Omega(iDim)/config->GetOmega_Ref();
+    Omega[iDim]  = config->GetPitching_Omega(iDim)/Omega_Ref;
     Ampl[iDim]   = config->GetPitching_Ampl(iDim)*DEG2RAD;
     Phase[iDim]  = config->GetPitching_Phase(iDim)*DEG2RAD;
   }
@@ -2042,9 +2041,9 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 
     /*--- Angular velocity at the new time ---*/
 
-    alphaDot[0] = pitching_vals[iter-restart_iter][3];
-    alphaDot[1] = pitching_vals[iter-restart_iter][4];
-    alphaDot[2] = pitching_vals[iter-restart_iter][5];
+    alphaDot[0] = pitching_vals[iter-restart_iter][3]/Omega_Ref;
+    alphaDot[1] = pitching_vals[iter-restart_iter][4]/Omega_Ref;
+    alphaDot[2] = pitching_vals[iter-restart_iter][5]/Omega_Ref;
   }
   else{
     /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
@@ -2061,8 +2060,8 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   }
 
   if (rank == MASTER_NODE && iter == 0) {
-      cout << " Pitching frequency: (" << Omega[0] << ", " << Omega[1];
-      cout << ", " << Omega[2] << ") rad/s." << endl;
+      cout << " Pitching frequency: (" << Omega[0]*Omega_Ref << ", " << Omega[1]*Omega_Ref;
+      cout << ", " << Omega[2]*Omega_Ref << ") rad/s." << endl;
       cout << " Pitching amplitude: (" << Ampl[0]/DEG2RAD << ", ";
       cout << Ampl[1]/DEG2RAD << ", " << Ampl[2]/DEG2RAD;
       cout << ") degrees."<< endl;
@@ -2144,7 +2143,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
 
   /*--- Local variables ---*/
-  su2double deltaX[3], newCoord[3] = {0.0, 0.0, 0.0}, Center[3], *Coord, Omega[3], Ampl[3], Lref;
+  su2double deltaX[3], newCoord[3] = {0.0, 0.0, 0.0}, Center[3], *Coord, Omega[3], Ampl[3], Lref,Omega_Ref;
   su2double *GridVel, newGridVel[3] = {0.0, 0.0, 0.0}, xDot[3];
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
@@ -2155,10 +2154,11 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
+  Omega_Ref = config->GetOmega_Ref();
 
   for (iDim = 0; iDim < 3; iDim++){
     Center[iDim] = config->GetMotion_Origin(iDim);
-    Omega[iDim]  = config->GetPlunging_Omega(iDim)/config->GetOmega_Ref();
+    Omega[iDim]  = config->GetPlunging_Omega(iDim)/Omega_Ref;
     Ampl[iDim]   = config->GetPlunging_Ampl(iDim)/Lref;
   }
 
@@ -2203,10 +2203,10 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   xDot[2] = -Ampl[2]*Omega[2]*(cos(Omega[2]*time_new));
 
   if (rank == MASTER_NODE && iter == 0) {
-    cout << " Plunging frequency: (" << Omega[0] << ", " << Omega[1];
-    cout << ", " << Omega[2] << ") rad/s." << endl;
-    cout << " Plunging amplitude: (" << Ampl[0] << ", ";
-    cout << Ampl[1] << ", " << Ampl[2] <<  ") m."<< endl;
+    cout << " Plunging frequency: (" << Omega[0]*Omega_Ref << ", " << Omega[1]*Omega_Ref;
+    cout << ", " << Omega[2]*Omega_Ref << ") rad/s." << endl;
+    cout << " Plunging amplitude: (" << Ampl[0]*Lref << ", ";
+    cout << Ampl[1]*Lref << ", " << Ampl[2]*Lref <<  ") m."<< endl;
   }
 
   /*--- Loop over and move each node in the volume mesh ---*/
@@ -2277,7 +2277,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   /*--- Local variables ---*/
   su2double deltaX[3], newCoord[3], Center[3], *Coord;
   su2double xDot[3];
-  su2double deltaT, time_new, time_old;
+  su2double deltaT, time_new, time_old, Velocity_Ref, Lref;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
@@ -2286,12 +2286,14 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
 
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
+  Velocity_Ref = config->GetVelocity_Ref();
+  Lref = config->GetLength_Ref();
 
   /*--- Get motion center and translation rates from config ---*/
 
   for (iDim = 0; iDim < 3; iDim++){
     Center[iDim] = config->GetMotion_Origin(iDim);
-    xDot[iDim]   = config->GetTranslation_Rate(iDim);
+    xDot[iDim]   = config->GetTranslation_Rate(iDim)/Velocity_Ref;
   }
 
   if (harmonic_balance) {
@@ -2310,7 +2312,8 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
     time_new = static_cast<su2double>(directIter)*deltaT;
     time_old = time_new;
     if (iter != 0) time_old = (static_cast<su2double>(directIter)+1.0)*deltaT;
-  } else {
+  } 
+  else {
     /*--- Forward time for the direct problem ---*/
     time_new = static_cast<su2double>(iter)*deltaT;
     if (harmonic_balance) {
@@ -2324,26 +2327,26 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
 
   /*--- Check if  translation file exists to fill up delta change in the position in the x, y, & z directions. ---*/
   if (using_translation_file){
-    deltaX[0] = translation_vals[iter-restart_iter][0];
-    deltaX[1] = translation_vals[iter-restart_iter][1];
-    deltaX[2] = translation_vals[iter-restart_iter][2];
+    deltaX[0] = translation_vals[iter-restart_iter][0]/Lref;
+    deltaX[1] = translation_vals[iter-restart_iter][1]/Lref;
+    deltaX[2] = translation_vals[iter-restart_iter][2]/Lref;
 
     /*--- Velocity at the new time ---*/
-    xDot[0] = translation_vals[iter-restart_iter][3];
-    xDot[1] = translation_vals[iter-restart_iter][4];
-    xDot[2] = translation_vals[iter-restart_iter][5];
+    xDot[0] = translation_vals[iter-restart_iter][3]/Velocity_Ref;
+    xDot[1] = translation_vals[iter-restart_iter][4]/Velocity_Ref;
+    xDot[2] = translation_vals[iter-restart_iter][5]/Velocity_Ref;
   }
   else{
-  /*--- Compute delta change in the position in the x, y, & z directions. ---*/
-  deltaX[0] = xDot[0]*(time_new-time_old);
-  deltaX[1] = xDot[1]*(time_new-time_old);
-  deltaX[2] = xDot[2]*(time_new-time_old);
+    /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+    deltaX[0] = xDot[0]*(time_new-time_old);
+    deltaX[1] = xDot[1]*(time_new-time_old);
+    deltaX[2] = xDot[2]*(time_new-time_old);
   }
 
   if (rank == MASTER_NODE) {
-    cout << " New physical time: " << time_new << " seconds." << endl;
+    cout << " New physical time: " << config->GetCurrent_UnstTime() << " seconds." << endl;
     if (iter == 0) {
-    cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
+      cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
       cout << ", " << xDot[2]*config->GetVelocity_Ref();
       if (config->GetSystemMeasurements() == SI) cout << ") m/s." << endl;
       else cout << ") ft/s." << endl;
